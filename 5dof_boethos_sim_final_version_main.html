@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARM-CALC FINAL // 5-DOF Arm Engineering Simulator</title>
+<style>
+:root{
+  --bg:#12151a; --panel:#181c24; --panel2:#1e232c; --border:#2b3140;
+  --amber:#ffb454; --cyan:#5fd4d6; --text:#dbe1ea; --dim:#7c8698;
+  --good:#6bcf7f; --warn:#ffcc66; --bad:#ff6b6b;
+  --mono:'JetBrains Mono','SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;padding-bottom:40px;}
+h1,h2,h3,h4{font-weight:600;letter-spacing:.02em;margin:0 0 8px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#161a21,#12151a);}
+.topbar .title{color:var(--amber);font-size:15px;letter-spacing:.05em;}
+.topbar .title span{color:var(--cyan);}
+.topbar .sub{color:var(--dim);font-size:10.5px;margin-top:2px;}
+#globalWarnings{padding:0;transition:padding .15s;}
+#globalWarnings.has{padding:8px 18px;background:rgba(255,107,107,.08);border-bottom:1px solid var(--bad);color:var(--bad);font-size:11.5px;line-height:1.6;}
+.tabs{display:flex;flex-wrap:wrap;gap:2px;padding:0 18px;border-bottom:1px solid var(--border);background:#14171e;}
+.tab-btn{background:none;border:none;color:var(--dim);font-family:var(--mono);font-size:11.5px;padding:10px 13px;cursor:pointer;border-bottom:2px solid transparent;letter-spacing:.02em;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--amber);border-bottom:2px solid var(--amber);}
+.main{padding:16px 22px;max-width:1300px;margin:0 auto;}
+.panel{background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:14px;}
+.panel h3{color:var(--cyan);font-size:12px;text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:10px;}
+label{display:block;color:var(--dim);font-size:10.8px;margin:8px 0 3px;}
+input[type=number],input[type=text],select{width:100%;background:#0e1116;border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:5px 7px;border-radius:4px;}
+input[type=range]{width:100%;accent-color:var(--amber);}
+.row{display:flex;gap:8px;flex-wrap:wrap;}
+.row>div{flex:1;min-width:120px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;}
+@media (max-width:900px){.grid2,.grid3,.grid4{grid-template-columns:1fr 1fr;}}
+.btn{background:#20262f;border:1px solid var(--border);color:var(--amber);font-family:var(--mono);padding:7px 12px;border-radius:4px;cursor:pointer;font-size:12px;letter-spacing:.02em;}
+.btn:hover{border-color:var(--amber);}
+.btn.cyan{color:var(--cyan);}
+.btn.small{padding:4px 8px;font-size:10.5px;}
+.tabcontent{display:none;}
+.tabcontent.active{display:block;}
+table{width:100%;border-collapse:collapse;font-size:11.8px;}
+th,td{text-align:left;padding:5px 7px;border-bottom:1px solid var(--border);}
+th{color:var(--dim);font-weight:500;text-transform:uppercase;font-size:9.5px;letter-spacing:.04em;}
+.val{color:var(--amber);font-weight:600;}
+.val.cyan{color:var(--cyan);}
+.formula{color:var(--dim);font-size:11px;background:#0e1116;border:1px dashed var(--border);border-radius:4px;padding:7px 9px;margin:4px 0 10px;line-height:1.55;white-space:pre-wrap;}
+.formula b{color:var(--amber);}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9.5px;letter-spacing:.04em;font-weight:600;}
+.badge.good{background:rgba(107,207,127,.15);color:var(--good);border:1px solid var(--good);}
+.badge.warn{background:rgba(255,204,102,.15);color:var(--warn);border:1px solid var(--warn);}
+.badge.bad{background:rgba(255,107,107,.15);color:var(--bad);border:1px solid var(--bad);}
+.note{color:var(--dim);font-size:11px;line-height:1.6;border-left:2px solid var(--cyan);padding-left:10px;margin:8px 0;}
+.reasoning{font-size:11.3px;line-height:1.65;color:var(--text);}
+.reasoning b{color:var(--cyan);}
+.jointcard{border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:12px;background:#171b22;}
+.jointcard h4{color:var(--amber);margin:0 0 8px;font-size:12px;letter-spacing:.02em;}
+.hint{color:var(--dim);font-size:10px;margin-top:2px;line-height:1.4;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:#2b3140;border-radius:4px;}
+.checkrow{display:flex;align-items:center;gap:6px;margin:8px 0;}
+.checkrow input{width:auto;}
+.checkrow label{margin:0;color:var(--text);font-size:11.2px;}
+.errmsg{color:var(--bad);font-size:12px;padding:8px;border:1px solid var(--bad);border-radius:4px;background:rgba(255,107,107,.08);}
+.okmsg{color:var(--good);font-size:12px;padding:8px;border:1px solid var(--good);border-radius:4px;background:rgba(107,207,127,.08);}
+canvas{background:#0b0d11;border:1px solid var(--border);border-radius:6px;max-width:100%;}
+.titleblock{position:fixed;bottom:0;left:0;right:0;height:34px;background:#0e1116;border-top:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:18px;font-size:10.5px;color:var(--dim);overflow-x:auto;white-space:nowrap;z-index:5;}
+.titleblock b{color:var(--amber);}
+ul.assume{font-size:11.5px;line-height:1.85;padding-left:18px;margin:0;}
+ul.assume li{margin-bottom:9px;}
+ul.assume b{color:var(--amber);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="title">ARM-CALC <span>// FINAL — 5-DOF ARM ENGINEERING SIMULATOR</span></div>
+    <div class="sub">torque (limit-aware worst case) · motor sizing · structural sizing · IK · payload / thrust / power</div>
+  </div>
+  <div class="sub" style="text-align:right">every field updates every output live<br>quasi-static + point/link-inertia model — see Assumptions tab</div>
+</div>
+
+<div id="globalWarnings"></div>
+
+<div class="tabs" id="tabs">
+  <button class="tab-btn active" data-tab="setup">01 · SETUP</button>
+  <button class="tab-btn" data-tab="pose">02 · LIVE POSE</button>
+  <button class="tab-btn" data-tab="torque">03 · TORQUE &amp; MOTORS</button>
+  <button class="tab-btn" data-tab="struct">04 · STRUCTURAL SIZING</button>
+  <button class="tab-btn" data-tab="ik">05 · INVERSE KINEMATICS</button>
+  <button class="tab-btn" data-tab="pay">06 · PAYLOAD / THRUST / POWER</button>
+  <button class="tab-btn" data-tab="dh">08 · DH KINEMATICS (MODIFIED)</button>
+  <button class="tab-btn" data-tab="assume">07 · ASSUMPTIONS</button>
+</div>
+
+<div class="main">
+
+<!-- ============ 01 SETUP ============ -->
+<div class="tabcontent active" id="tab-setup">
+
+  <div class="panel">
+    <h3>Link Geometry (corrected Modified-DH parameters)</h3>
+    <div class="reasoning">These are the a<sub>i-1</sub>/d<sub>i</sub> values from your CAD's DH derivation (α fixed at 0°/90°/180°/90°/90°/0° per the corrected table — see tab 08). θ1..θ5 are now the <b>actual joint angles</b> — no more absolute/relative conversion, since Modified-DH θᵢ already <i>is</i> the physical joint variable.</div>
+    <div class="grid4" style="margin-top:8px;">
+      <div><label>a2 — base→shoulder offset (mm)</label><input type="number" id="dhA2" value="100"></div>
+      <div><label>a3 — shoulder→elbow, upper arm (mm)</label><input type="number" id="dhA3" value="360"></div>
+      <div><label>a4 — elbow→wrist-pitch, forearm (mm)</label><input type="number" id="dhA4" value="300"></div>
+      <div><label>a5 — wrist-pitch→wrist-roll (mm)</label><input type="number" id="dhA5" value="0"></div>
+    </div>
+    <div class="grid4" style="margin-top:8px;">
+      <div><label>d2 — base→shoulder rise (mm)</label><input type="number" id="dhD2" value="60"></div>
+      <div><label>d5 — wrist-pitch→wrist-roll offset (mm)</label><input type="number" id="dhD5" value="20"></div>
+      <div><label>d6 — wrist-roll→gripper TCP (mm)</label><input type="number" id="dhD6" value="90"></div>
+      <div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Link Mass &amp; Centre of Mass</h3>
+    <div class="hint">c = COM location as a fraction of the link's actual 3D length from its proximal joint (0.5 = uniform rod; push toward 0 if a motor is mounted at that joint end). "Upper arm" spans shoulder→elbow, "forearm" spans elbow→wrist-pitch, "wrist/gripper" spans wrist-pitch→TCP (embeds the wrist-roll joint).</div>
+    <div class="grid4">
+      <div><label>m2 upper arm (g)</label><input type="number" id="m2" value="180"></div>
+      <div><label>c2</label><input type="number" id="c2" value="0.45" step="0.05"></div>
+      <div><label>m3 forearm (g)</label><input type="number" id="m3" value="140"></div>
+      <div><label>c3</label><input type="number" id="c3" value="0.4" step="0.05"></div>
+    </div>
+    <div class="grid4">
+      <div><label>m4 wrist/gripper (g)</label><input type="number" id="m4" value="160"></div>
+      <div><label>c4</label><input type="number" id="c4" value="0.4" step="0.05"></div>
+      <div><label>Payload mp (g)</label><input type="number" id="mp" value="250"></div>
+      <div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Actuator Mass &amp; Mounting</h3>
+    <div class="reasoning">Every gram of motor sitting out on the arm adds to the lever arm every <i>upstream</i> joint must fight. "Local" = motor lives at that joint. "Remote" = motor is moved closer to the base and drives that joint via belt/cable/rod — it no longer loads the outboard structure at all.</div>
+    <div class="grid3" style="margin-top:8px;">
+      <div><label>Base motor mass (g)</label><input type="number" id="actBaseMass" value="55"><div class="hint">Sits at the base — never loads any lever arm.</div></div>
+      <div><label>Shoulder motor mass (g)</label><input type="number" id="actShoulderMass" value="60"><div class="hint">Sits at the shoulder axis — never loads any lever arm.</div></div>
+      <div></div>
+    </div>
+    <div class="grid3" style="margin-top:8px;">
+      <div><label>Elbow motor mass (g)</label><input type="number" id="actElbowMass" value="55">
+        <label>Elbow motor mount</label>
+        <select id="actElbowMount"><option value="local">Local (at elbow)</option><option value="shoulder" selected>Remote (at shoulder)</option></select></div>
+      <div><label>Wrist-pitch motor mass (g)</label><input type="number" id="actWristPMass" value="25">
+        <label>Wrist-pitch motor mount</label>
+        <select id="actWristPMount"><option value="local">Local (at wrist)</option><option value="elbow">Remote (at elbow)</option><option value="shoulder">Remote (at shoulder)</option></select></div>
+      <div><label>Wrist-roll motor mass (g)</label><input type="number" id="actWristRMass" value="20">
+        <label>Wrist-roll motor mount</label>
+        <select id="actWristRMount"><option value="local">Local (at wrist)</option><option value="elbow">Remote (at elbow)</option><option value="shoulder">Remote (at shoulder)</option></select></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Joint Travel Limits</h3>
+    <div class="reasoning">This is what makes the worst-case torque search realistic instead of a blind "assume fully horizontal." With the corrected Modified-DH model, θ2/θ3/θ4 are each the <b>actual, independent joint angle</b> (no more composing elbow/wrist as an offset from the link before it) — enter each joint's own physical travel range directly, matching what you'll program as its limit.</div>
+    <div class="grid3" style="margin-top:8px;">
+      <div><label>θ2 shoulder min / max (°)</label><div class="row"><input type="number" id="shMin" value="-30"><input type="number" id="shMax" value="120"></div></div>
+      <div><label>θ3 elbow min / max (°)</label><div class="row"><input type="number" id="elMin" value="-140"><input type="number" id="elMax" value="140"></div></div>
+      <div><label>θ4 wrist-pitch min / max (°)</label><div class="row"><input type="number" id="wpMin" value="-120"><input type="number" id="wpMax" value="120"></div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Design Margins &amp; Dynamics</h3>
+    <div class="grid3">
+      <div><label>Safety factor (on required torque)</label><input type="number" id="SF" value="1.6" step="0.1"></div>
+      <div><label>Friction / bearing / routing margin (%)</label><input type="number" id="fricPct" value="15"></div>
+      <div><label>Continuous-duty derating (cont. ÷ stall, %)</label><input type="number" id="deratePct" value="35">
+        <div class="hint">Rule of thumb only — if your motor's datasheet states an actual continuous/rated torque, enter that as the "stall" figure in Torque &amp; Motors and set this to 100%.</div></div>
+    </div>
+    <div class="grid4" style="margin-top:6px;">
+      <div><label>α1 base (deg/s²)</label><input type="number" id="a1" value="90"></div>
+      <div><label>α2 shoulder (deg/s²)</label><input type="number" id="a2" value="120"></div>
+      <div><label>α3 elbow (deg/s²)</label><input type="number" id="a3" value="150"></div>
+      <div><label>α4 wrist pitch (deg/s²)</label><input type="number" id="a4" value="200"></div>
+    </div>
+    <div class="grid3" style="margin-top:6px;">
+      <div><label>α5 wrist roll (deg/s²)</label><input type="number" id="a5" value="180"></div>
+      <div><label>Payload/gripper roll offset (mm)</label><input type="number" id="rollOffset" value="20"></div>
+      <div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ 02 LIVE POSE ============ -->
+<div class="tabcontent" id="tab-pose">
+  <div class="grid2">
+    <div>
+      <div class="panel">
+        <h3>Joint Angles (live pose — visualisation only)</h3>
+        <div class="note">This pose is <b>not</b> what motors are sized against. Motor sizing (tab 03) always uses the worst pose found within your Setup-tab joint limits, searched automatically. These sliders are now the <b>actual DH joint angles</b> directly — no absolute/relative conversion needed anymore.</div>
+        <label>θ1 base yaw: <span id="v_t1" class="val"></span>°</label>
+        <input type="range" id="t1" min="-150" max="150" value="0">
+        <label>θ2 shoulder: <span id="v_p2" class="val"></span>°</label>
+        <input type="range" id="p2" min="-90" max="150" value="45">
+        <label>θ3 elbow: <span id="v_p3" class="val"></span>°</label>
+        <input type="range" id="p3" min="-150" max="150" value="20">
+        <label>θ4 wrist pitch: <span id="v_p4" class="val"></span>°</label>
+        <input type="range" id="p4" min="-150" max="150" value="0">
+        <label>θ5 wrist roll: <span id="v_t5" class="val"></span>°</label>
+        <input type="range" id="t5" min="-180" max="180" value="0">
+        <div class="hint" id="relAngles" style="margin-top:8px;"></div>
+        <button class="btn small cyan" style="margin-top:10px" onclick="applyWorstPose()">Load worst-case pose into sliders →</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Side View (r–z) + Top View (yaw)</h3>
+      <canvas id="cnv" width="600" height="420"></canvas>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Torque at this Exact Pose (informational)</h3>
+    <table id="liveTorqueTable"></table>
+  </div>
+</div>
+
+<!-- ============ 03 TORQUE & MOTORS ============ -->
+<div class="tabcontent" id="tab-torque">
+  <div class="panel">
+    <h3>Worst-Case Required Torque</h3>
+    <div class="reasoning">A grid search sweeps every combination of shoulder/elbow/wrist angle <b>inside your configured joint-limit ranges</b> and keeps the maximum gravity torque found for each joint independently — this is the true worst case your hardware can actually reach, not just an assumed "flat horizontal" pose. Dynamic (inertial) torque adds the point-mass <i>and</i> each link's own rotational inertia (mL²/12, parallel-axis) at your target angular acceleration. Friction margin and safety factor are applied last.</div>
+    <div id="reqFormulas"></div>
+  </div>
+  <div class="panel">
+    <h3>How to read the motor cards below</h3>
+    <div class="reasoning">Enter a candidate motor's <b>stall</b> torque (the datasheet headline number), your gear ratio and gearbox efficiency. The tool derates stall→continuous, multiplies by gear ratio and efficiency, and compares against the required torque above. If you know your motor's actual rated <i>continuous</i> torque, put that in the stall field instead and set derating to 100% in Setup. Optional rotor inertia lets you account for the extra torque needed just to spin up the motor's own rotor through the gearbox.</div>
+  </div>
+  <div id="motorJoints">
+    <div class="jointcard" id="jcard_base">
+      <h4>J1 · Base (yaw)</h4>
+      <div class="grid4">
+        <div><label>Gear ratio</label><input type="number" id="gear_base" value="15"></div>
+        <div><label>Gearbox efficiency %</label><input type="number" id="eff_base" value="80"></div>
+        <div><label>Candidate stall torque (kg·cm)</label><input type="number" id="stall_base" value="8"></div>
+        <div><label>Target speed (deg/s)</label><input type="number" id="speed_base" value="60"></div>
+      </div>
+      <div class="row"><div><label>Rotor inertia (g·cm², optional)</label><input type="number" id="rotI_base" value="0"></div></div>
+      <div class="checkrow"><input type="checkbox" id="poh_base"><label>Must hold position with power/signal removed</label></div>
+      <div id="motorOut_base"></div>
+    </div>
+    <div class="jointcard" id="jcard_shoulder">
+      <h4>J2 · Shoulder (pitch)</h4>
+      <div class="grid4">
+        <div><label>Gear ratio</label><input type="number" id="gear_shoulder" value="20"></div>
+        <div><label>Gearbox efficiency %</label><input type="number" id="eff_shoulder" value="80"></div>
+        <div><label>Candidate stall torque (kg·cm)</label><input type="number" id="stall_shoulder" value="35"></div>
+        <div><label>Target speed (deg/s)</label><input type="number" id="speed_shoulder" value="30"></div>
+      </div>
+      <div class="row"><div><label>Rotor inertia (g·cm², optional)</label><input type="number" id="rotI_shoulder" value="0"></div></div>
+      <div class="checkrow"><input type="checkbox" id="poh_shoulder" checked><label>Must hold position with power/signal removed</label></div>
+      <div id="motorOut_shoulder"></div>
+    </div>
+    <div class="jointcard" id="jcard_elbow">
+      <h4>J3 · Elbow (pitch)</h4>
+      <div class="grid4">
+        <div><label>Gear ratio</label><input type="number" id="gear_elbow" value="12"></div>
+        <div><label>Gearbox efficiency %</label><input type="number" id="eff_elbow" value="85"></div>
+        <div><label>Candidate stall torque (kg·cm)</label><input type="number" id="stall_elbow" value="22"></div>
+        <div><label>Target speed (deg/s)</label><input type="number" id="speed_elbow" value="40"></div>
+      </div>
+      <div class="row"><div><label>Rotor inertia (g·cm², optional)</label><input type="number" id="rotI_elbow" value="0"></div></div>
+      <div class="checkrow"><input type="checkbox" id="poh_elbow" checked><label>Must hold position with power/signal removed</label></div>
+      <div id="motorOut_elbow"></div>
+    </div>
+    <div class="jointcard" id="jcard_wristP">
+      <h4>J4 · Wrist Pitch</h4>
+      <div class="grid4">
+        <div><label>Gear ratio</label><input type="number" id="gear_wristP" value="6"></div>
+        <div><label>Gearbox efficiency %</label><input type="number" id="eff_wristP" value="85"></div>
+        <div><label>Candidate stall torque (kg·cm)</label><input type="number" id="stall_wristP" value="12"></div>
+        <div><label>Target speed (deg/s)</label><input type="number" id="speed_wristP" value="60"></div>
+      </div>
+      <div class="row"><div><label>Rotor inertia (g·cm², optional)</label><input type="number" id="rotI_wristP" value="0"></div></div>
+      <div class="checkrow"><input type="checkbox" id="poh_wristP" checked><label>Must hold position with power/signal removed</label></div>
+      <div id="motorOut_wristP"></div>
+    </div>
+    <div class="jointcard" id="jcard_wristR">
+      <h4>J5 · Wrist Roll</h4>
+      <div class="grid4">
+        <div><label>Gear ratio</label><input type="number" id="gear_wristR" value="4"></div>
+        <div><label>Gearbox efficiency %</label><input type="number" id="eff_wristR" value="85"></div>
+        <div><label>Candidate stall torque (kg·cm)</label><input type="number" id="stall_wristR" value="6"></div>
+        <div><label>Target speed (deg/s)</label><input type="number" id="speed_wristR" value="90"></div>
+      </div>
+      <div class="row"><div><label>Rotor inertia (g·cm², optional)</label><input type="number" id="rotI_wristR" value="0"></div></div>
+      <div class="checkrow"><input type="checkbox" id="poh_wristR"><label>Must hold position with power/signal removed</label></div>
+      <div id="motorOut_wristR"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 04 STRUCTURAL ============ -->
+<div class="tabcontent" id="tab-struct">
+  <div class="panel">
+    <h3>What should the links themselves weigh?</h3>
+    <div class="reasoning">Each link is modelled as a cantilever tube, fixed at the proximal joint, loaded at the tip by everything it carries downstream (links, payload, <i>and any actuator mass physically riding on that link</i> at its far end) in the worst-case horizontal orientation. The tool solves for the minimum tube outer diameter — at your chosen wall thickness and material — that keeps bending stress under an allowable stress (yield ÷ material safety factor), checks tip deflection too, and reports the governing mass. This is simple beam theory, not FEA — treat it as a floor, not a final spec.</div>
+  </div>
+  <div id="structJoints">
+    <div class="jointcard" id="scard_L2">
+      <h4>Upper Arm (J2 → J3)</h4>
+      <div class="grid4">
+        <div><label>Material</label>
+          <select id="mat_L2">
+            <option>Aluminum 6061-T6</option><option>Steel (mild)</option><option>Carbon fiber tube</option>
+            <option>Nylon (SLS)</option><option>PLA (3D printed)</option><option>ABS (3D printed)</option>
+          </select></div>
+        <div><label>Wall thickness (mm)</label><input type="number" id="wall_L2" value="2" step="0.5"></div>
+        <div><label>Material safety factor</label><input type="number" id="matsf_L2" value="3" step="0.5"></div>
+        <div><label>Max tip deflection (mm)</label><input type="number" id="defl_L2" value="2" step="0.5"></div>
+      </div>
+      <div id="structOut_L2"></div>
+    </div>
+    <div class="jointcard" id="scard_L3">
+      <h4>Forearm (J3 → J4)</h4>
+      <div class="grid4">
+        <div><label>Material</label>
+          <select id="mat_L3">
+            <option>Aluminum 6061-T6</option><option>Steel (mild)</option><option>Carbon fiber tube</option>
+            <option>Nylon (SLS)</option><option>PLA (3D printed)</option><option>ABS (3D printed)</option>
+          </select></div>
+        <div><label>Wall thickness (mm)</label><input type="number" id="wall_L3" value="2" step="0.5"></div>
+        <div><label>Material safety factor</label><input type="number" id="matsf_L3" value="3" step="0.5"></div>
+        <div><label>Max tip deflection (mm)</label><input type="number" id="defl_L3" value="2" step="0.5"></div>
+      </div>
+      <div id="structOut_L3"></div>
+    </div>
+    <div class="jointcard" id="scard_L4">
+      <h4>Wrist / Gripper (J4 → tip)</h4>
+      <div class="grid4">
+        <div><label>Material</label>
+          <select id="mat_L4">
+            <option>Aluminum 6061-T6</option><option>Steel (mild)</option><option>Carbon fiber tube</option>
+            <option>Nylon (SLS)</option><option selected>PLA (3D printed)</option><option>ABS (3D printed)</option>
+          </select></div>
+        <div><label>Wall thickness (mm)</label><input type="number" id="wall_L4" value="2.5" step="0.5"></div>
+        <div><label>Material safety factor</label><input type="number" id="matsf_L4" value="3" step="0.5"></div>
+        <div><label>Max tip deflection (mm)</label><input type="number" id="defl_L4" value="1.5" step="0.5"></div>
+      </div>
+      <div id="structOut_L4"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 05 IK ============ -->
+<div class="tabcontent" id="tab-ik">
+  <div class="grid2">
+    <div class="panel">
+      <h3>Target End-Effector Position</h3>
+      <label>X (mm)</label><input type="number" id="ikX" value="300">
+      <label>Y (mm)</label><input type="number" id="ikY" value="150">
+      <label>Z (mm)</label><input type="number" id="ikZ" value="150">
+      <div id="ikResult" style="margin-top:10px;"></div>
+      <button class="btn cyan" style="margin-top:10px;width:100%;display:none" id="applyPoseBtn" onclick="applyIKtoPose()">Apply solution to Live Pose tab →</button>
+    </div>
+    <div class="panel">
+      <h3>Method</h3>
+      <div class="reasoning">This arm's real geometry (the 180° elbow twist, offset base-to-shoulder rise) has no clean closed-form IK the way a pure planar 3-link arm does, so this solves <b>numerically</b>: damped least-squares on the position Jacobian (θ ← θ + Jᵀ(JJᵀ+λ²I)⁻¹·error), iterated from your <i>current Live Pose tab angles</i> as the starting seed. Different seeds can converge to different elbow configurations — nudge the Live Pose sliders and re-solve if you want a different one.</div>
+      <div class="note">θ5 (wrist roll) never appears in this solve — rolling about the gripper's own axis can't move the tip position (the TCP sits on that axis by construction), so it's a free DOF for position-only targets and is left wherever your Live Pose slider currently has it.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 08 DH KINEMATICS (MODIFIED, CORRECTED) ============ -->
+<div class="tabcontent" id="tab-dh">
+  <div class="panel">
+    <h3>Corrected Modified (Craig) DH Parameter Table</h3>
+    <div class="errbox" style="background:#2a1418;border:1px solid #5a2a30;border-radius:8px;padding:12px 14px;margin-bottom:12px;"><b style="color:#ff6b6b;">Found &amp; fixed:</b> the original derivation's column headers (a<sub>i-1</sub>, α<sub>i-1</sub>) were Modified-DH naming, but its actual transform matrices were built with the Standard/Classical-DH multiplication order (<span class="val">Rotz·Transz·Transx·Rotx</span>) instead of Modified-DH's (<span class="val">Rotx·Transx·Rotz·Transz</span>) — confirmed by symbolic expansion of T12/T23/T34. Every calculation in this tool now uses the corrected order below.</div>
+    <div class="reasoning">Transform: <b>ᵢ⁻¹Tᵢ = Rotx(α<sub>i−1</sub>)·Transx(a<sub>i−1</sub>)·Rotz(θᵢ)·Transz(dᵢ)</b>. Row 6 is a fixed TCP offset (θ=0, not actuated) — this is a true 5-DOF chain plus a rigid gripper offset.</div>
+    <table id="dhParamTable" style="margin-top:8px;"></table>
+    <div class="hint">θ1..θ5 are now the direct joint angles used everywhere else in this tool (Live Pose, worst-case search, IK) — no absolute/relative conversion layer anymore, since Modified-DH's θᵢ already <i>is</i> the physical joint variable.</div>
+  </div>
+  <div class="panel">
+    <h3>Forward Kinematics — Matrix Chain vs. Closed-Form Cross-Check</h3>
+    <div class="reasoning">Two independent computations of the same tip position at your current Live Pose: the live 4×4 matrix chain ⁰T₆ = A₁A₂A₃A₄A₅A₆, and a separately-derived symbolic closed-form expression (computer-algebra derived once, not hand-simplified). They should agree to numerical precision — if they ever don't, something in this tool has a bug.</div>
+    <table id="dhFKTable" style="margin-top:8px;"></table>
+    <div id="dhFKCheck" style="margin-top:8px;"></div>
+  </div>
+  <div class="panel">
+    <h3>Geometric Jacobian (6×5) at Current Live-Pose</h3>
+    <div class="reasoning">Column i = [J<sub>vi</sub>; J<sub>wi</sub>], with <b>J<sub>vi</sub> = zᵢ × (o₆−oᵢ)</b> and <b>J<sub>wi</sub> = zᵢ</b> (zᵢ, oᵢ = frame i's own z-axis/origin — correct for Modified DH). Notice column 5 (wrist roll)'s top three rows are ~0 — the TCP sits on the roll axis by construction, so rolling never moves it.</div>
+    <table id="dhJacTable" style="margin-top:8px;"></table>
+  </div>
+  <div class="panel">
+    <h3>Manipulability &amp; Singularity — Current Pose</h3>
+    <div id="dhManipOut"></div>
+    <div class="hint">Translational manipulability w = √det(J<sub>v</sub>·J<sub>v</sub><sup>T</sup>) using the 3×5 linear-velocity block. w→0 flags a kinematic singularity at this exact pose.</div>
+  </div>
+</div>
+
+<!-- ============ 06 PAYLOAD/THRUST/POWER ============ -->
+<div class="tabcontent" id="tab-pay">
+  <div class="panel">
+    <h3>Max Payload at Current Live-Pose Angles</h3>
+    <div class="note">Uses each joint's <b>available continuous torque</b> from the Torque &amp; Motors tab, at the pose currently set on the Live Pose tab (not the worst case — this is "what can I lift right now, in this exact position").</div>
+    <table id="payloadTable"></table>
+    <div id="payloadSummary" style="margin-top:8px;"></div>
+  </div>
+  <div class="panel">
+    <h3>Gripper Force: Required vs. Achievable</h3>
+    <div class="reasoning">Holding an object without it slipping needs enough clamp force to generate friction ≥ its weight: <b>F_required = (payload weight × SF) / (contact points × friction coefficient)</b>. What the actuator can actually produce is <b>F_achievable = (torque × mechanical advantage) / lever arm</b>. Compare the two — a gripper can often pinch far harder than the arm can hold up, or the reverse.</div>
+    <div class="grid4" style="margin-top:6px;">
+      <div><label>Friction coefficient μ</label><input type="number" id="gripMu" value="0.4" step="0.05"></div>
+      <div><label>Contact points</label><input type="number" id="gripContacts" value="2"></div>
+      <div><label>Actuator torque (kg·cm)</label><input type="number" id="gripTorque" value="15"></div>
+      <div><label>Jaw lever arm r (mm)</label><input type="number" id="gripR" value="25"></div>
+    </div>
+    <div class="grid4">
+      <div><label>Linkage mechanical advantage</label><input type="number" id="gripMA" value="1.2" step="0.1"></div>
+    </div>
+    <div id="gripOut" style="margin-top:8px;"></div>
+  </div>
+  <div class="panel">
+    <h3>General End-Effector Thrust (angled lever)</h3>
+    <div class="reasoning">For a linkage-driven joint where the actuator doesn't push perpendicular to its lever arm: <b>F = τ_required / (r · sinθ)</b>. Force rises sharply as θ approaches 0°/180° — a shallow attachment angle needs disproportionately more force for the same torque.</div>
+    <div class="grid3" style="margin-top:6px;">
+      <div><label>Joint</label><select id="thrustJoint"><option value="base">Base</option><option value="shoulder" selected>Shoulder</option><option value="elbow">Elbow</option><option value="wristP">Wrist pitch</option><option value="wristR">Wrist roll</option></select></div>
+      <div><label>Lever arm r (mm)</label><input type="number" id="thrustLever" value="30"></div>
+      <div><label>Attachment angle θ (deg)</label><input type="number" id="thrustAngle" value="90"></div>
+    </div>
+    <div id="thrustOut" style="margin-top:8px;"></div>
+  </div>
+  <div class="panel">
+    <h3>Power &amp; Current Budget</h3>
+    <div class="reasoning">Running power sums each joint's mechanical power (required torque × target angular speed) at an assumed 60% electrical-to-mechanical efficiency. This is a <i>running</i> estimate, not a worst-case stall/jam current — enter each motor's datasheet stall current below to see what your supply must survive if multiple joints jam simultaneously (e.g. a collision), which is the scenario that actually browns out supplies.</div>
+    <table id="speedTable"></table>
+    <div id="runningPowerNote" style="margin:8px 0;"></div>
+    <table id="stallCurrentTable"></table>
+    <div id="stallCurrentSum" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<!-- ============ 07 ASSUMPTIONS ============ -->
+<div class="tabcontent" id="tab-assume">
+  <div class="panel">
+    <h3>Live Input Validation</h3>
+    <div id="assumeValidation"></div>
+  </div>
+  <div class="panel">
+    <h3>Model Assumptions &amp; Known Limitations</h3>
+    <ul class="assume">
+      <li><b>Quasi-static, not full manipulator dynamics.</b> Gravity torque is computed exactly for this arm's real 3D geometry (τⱼ = zⱼ·Σ mₖ(pₖ−oⱼ)×(0,0,−g), summed only over masses genuinely downstream of joint j — see tab 08 for the corrected DH chain this is built on). The dynamic (inertial) term is a simplified point-mass + link self-inertia (mL²/12, parallel-axis) approximation. Coriolis and centripetal coupling between joints moving <i>simultaneously</i> are not modelled — those only matter for fast coordinated moves, and would add to (not subtract from) the numbers here.</li>
+      <li><b>Link self-inertia (mL²/12) assumes a roughly uniform mass distribution</b> along the link's actual 3D length. If your COM fraction (c2/c3/c4) is far from 0.5 because of a concentrated motor mass, the true rotational inertia differs from this approximation — direction of the error isn't fixed, treat it as a secondary-order term.</li>
+      <li><b>Reflected motor/gearbox rotor inertia</b> is included only if you fill in the optional rotor-inertia field per joint in Torque &amp; Motors; left at zero, high-ratio drivetrains (&gt;20:1) will under-report their true dynamic torque need.</li>
+      <li><b>Worst-case search is a discretised grid</b> (20 steps per axis) over your θ2/θ3/θ4 joint-limit ranges, not a closed-form optimum — θ1 (base yaw) and θ5 (wrist roll) are held fixed during the search since neither changes any joint's gravity-torque magnitude (rotating the whole arm about its own vertical base axis doesn't change any link's height, and rolling the gripper about its own axis doesn't move anything off that axis). Resolution error is well under 1° — negligible next to your safety factor — but it is an approximation, not an exact solve.</li>
+      <li><b>Structural sizing is simple cantilever beam theory</b> (bending stress + tip deflection on a hollow round tube), not FEA. Link lengths are the actual 3D distances between consecutive joint origins from the corrected DH chain (pose-independent by construction — rotating a joint doesn't stretch the rigid body after it). Stress concentrations at mounting holes, bearing seats and brackets aren't modelled and will see higher local stress than predicted here — treat the recommended tube as a lower bound, not a final part spec.</li>
+      <li><b>Continuous-duty derating is a rule of thumb</b> (default 35% of stall), not your specific motor's thermal curve. If your motor's datasheet states an actual rated/continuous torque, use that number directly (enter it as "stall" and set derating to 100%) instead of relying on the generic ratio.</li>
+      <li><b>RC servo torque is voltage-dependent.</b> A "20 kg·cm" servo is almost always rated at 7.4–8.4V — run it from 5V logic or a sagging battery and you can lose 30–40% of that figure. This tool has no way to know your actual supply voltage under load; budget margin for it.</li>
+      <li><b>Backdrivability / power-off holding is a mechanical property, not a torque number.</b> A motor sized for exactly the required torque will NOT hold that load with power removed unless the drivetrain is self-locking (worm gear, very high ratio + low efficiency) or a mechanical brake is fitted — flagged per joint on the Torque &amp; Motors tab.</li>
+      <li><b>Actuator placement is one of the biggest levers you have.</b> Every gram of motor sitting further from the base multiplies through leverage at every joint above it. Your CAD's belt-driven elbow motor (mounted near the shoulder rather than at the elbow itself) is exactly this technique — set the elbow motor's mount dropdown in Setup to "Remote (at shoulder)" to see how much torque that removes from the shoulder joint.</li>
+      <li><b>Inverse kinematics is numeric (damped least-squares on the Jacobian), not closed-form</b> — this arm's real geometry (180° elbow twist, offset base-to-shoulder rise) doesn't reduce to a clean law-of-cosines solve the way a pure planar 3-link arm does. It converges from your current Live Pose angles as the seed; different seeds can land on different elbow configurations. Backlash and structural compliance aren't modelled — both FK and IK assume rigid links and zero gear play.</li>
+      <li><b>This is a first-pass sizing tool, not a certified structural or safety analysis.</b> Validate against real hardware before anything load-bearing or safety-critical.</li>
+      <li><b>Gravity g = 9.81 m/s²</b>; all masses convert g→kg and all lengths mm→m internally before any calculation.</li>
+    </ul>
+  </div>
+</div>
+
+</div>
+
+<div class="titleblock" id="titleblock"></div>
+
+<script>
+/* =====================================================================
+   PURE MATH CORE — no DOM access. Deterministic given a plain config
+   object. Kept separate so it can be unit-tested independently.
+
+   Built on the CORRECTED Modified (Craig) DH chain for this arm
+   (see tab 08 for the derivation/proof of what was wrong before):
+     i   alpha_{i-1}   a_{i-1}   d_i    theta_i
+     1       0            0       0      th1        (base yaw)
+     2      +90           0      d2      th2        (shoulder pitch)
+     3     +180           a3      0      th3        (elbow pitch)
+     4      +90           a4      0      th4        (wrist pitch)
+     5      +90           a5      d5     th5        (wrist roll)
+     6       0            0       d6      0         (fixed TCP offset)
+
+   Frame origins depend only on UPSTREAM joint angles (o_i depends on
+   th1..th_{i-1}, never th_i itself) — a general DH property used
+   throughout to decide which masses are genuinely "downstream" of a
+   given joint for gravity/inertia purposes.
+   ===================================================================== */
+const NM2KGCM = 10.19716;
+function rad(d){ return d*Math.PI/180; }
+function deg(r){ return r*180/Math.PI; }
+function clamp(v,lo,hi){ return Math.min(hi,Math.max(lo,v)); }
+function fmtN(n,d){ d = (d===undefined?3:d); if(n===null||n===undefined||!isFinite(n)) return '—'; return Number(n).toFixed(d); }
+function nmkg(nm){ return isFinite(nm) ? (fmtN(nm,3)+' N·m  ('+fmtN(nm*NM2KGCM,1)+' kg·cm)') : '—'; }
+const G = 9.81;
+
+/* ---------------- 4x4 homogeneous transform helpers ---------------- */
+function ident4(){ return [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]; }
+function matMul4(A,B){
+  const C=[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+  for(let r=0;r<4;r++) for(let cc=0;cc<4;cc++){ let s=0; for(let k=0;k<4;k++) s+=A[r][k]*B[k][cc]; C[r][cc]=s; }
+  return C;
+}
+function rotX4(a){ const c=Math.cos(a), s=Math.sin(a); return [[1,0,0,0],[0,c,-s,0],[0,s,c,0],[0,0,0,1]]; }
+function transX4(a){ return [[1,0,0,a],[0,1,0,0],[0,0,1,0],[0,0,0,1]]; }
+function rotZ4(t){ const c=Math.cos(t), s=Math.sin(t); return [[c,-s,0,0],[s,c,0,0],[0,0,1,0],[0,0,0,1]]; }
+function transZ4(d){ return [[1,0,0,0],[0,1,0,0],[0,0,1,d],[0,0,0,1]]; }
+function mdhA(alpha,a,theta,d){ return matMul4(matMul4(matMul4(rotX4(alpha),transX4(a)),rotZ4(theta)),transZ4(d)); }
+function frameFromT(T){ return { R:[[T[0][0],T[0][1],T[0][2]],[T[1][0],T[1][1],T[1][2]],[T[2][0],T[2][1],T[2][2]]], o:[T[0][3],T[1][3],T[2][3]] }; }
+function cross3(a,b){ return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+function sub3(a,b){ return [a[0]-b[0], a[1]-b[1], a[2]-b[2]]; }
+function dot3(a,b){ return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]; }
+function col3(R,j){ return [R[0][j],R[1][j],R[2][j]]; }
+function norm3(a){ return Math.hypot(a[0],a[1],a[2]); }
+
+// c: config with La2,La3,La4,La5,Ld2,Ld5,Ld6 in METRES.
+// th: [th1..th5] in RADIANS. Returns frames[0..6]; frames[0]=base identity,
+// frames[6]=fixed TCP offset (gripper tip).
+function dhChain(c, th){
+  const alpha=[0, Math.PI/2, Math.PI, Math.PI/2, Math.PI/2, 0];
+  const aPrev=[0, c.La2, c.La3, c.La4, c.La5, 0];
+  const dCur =[0, c.Ld2, 0, 0, c.Ld5, c.Ld6];
+  const thetas=[th[0], th[1], th[2], th[3], th[4], 0];
+  let T = ident4();
+  const frames=[{R:[[1,0,0],[0,1,0],[0,0,1]], o:[0,0,0]}];
+  for(let i=0;i<6;i++){
+    const Ai = mdhA(alpha[i], aPrev[i], thetas[i], dCur[i]);
+    T = matMul4(T, Ai);
+    frames.push(frameFromT(T));
+  }
+  return frames; // frames[1]=frame1 (=base, th1 only) ... frames[6]=TCP
+}
+
+// Pose-invariant physical link lengths (proven: DH offset magnitude
+// between consecutive frames is always sqrt(a^2+d^2), independent of
+// any theta — so a single nominal-pose evaluation gives the true,
+// fixed structural length of each link).
+function linkLengths(c){
+  const frames = dhChain(c, [0,0,0,0,0]);
+  return {
+    L_upperArm: norm3(sub3(frames[3].o, frames[2].o)),   // shoulder->elbow
+    L_forearm:  norm3(sub3(frames[4].o, frames[3].o)),   // elbow->wristP
+    L_wristGrip:norm3(sub3(frames[6].o, frames[4].o)),   // wristP->TCP (embeds wristR)
+  };
+}
+
+// Build the list of point masses in the chain, each tagged with a
+// "depth" = the highest joint index its position actually depends on.
+// A mass with depth D contributes to joint j's gravity/inertia iff D>=j
+// (masses upstream of a joint don't load it — see tab 08/assumptions).
+function buildMasses(c, frames){
+  const o2=frames[2].o, o3=frames[3].o, o4=frames[4].o, o5=frames[5].o, o6=frames[6].o;
+  function lerp(p0,p1,t){ return [p0[0]+(p1[0]-p0[0])*t, p0[1]+(p1[1]-p0[1])*t, p0[2]+(p1[2]-p0[2])*t]; }
+  const masses = [
+    {p:lerp(o2,o3,c.c2), m:c.m2, depth:2},               // upper arm COM
+    {p:lerp(o3,o4,c.c3), m:c.m3, depth:3},               // forearm COM
+    {p:lerp(o4,o6,c.c4), m:c.m4, depth:4},               // wrist/gripper COM
+    {p:o6,               m:c.mp, depth:4},               // payload at TCP
+  ];
+  function mountPoint(mount){ return mount==='shoulder'?{p:o2,depth:1}:(mount==='elbow'?{p:o3,depth:2}:null); }
+  // elbow actuator: local -> at o3 (depth 2); remote(shoulder) -> at o2 (depth 1)
+  const elb = c.actElbowMount==='local' ? {p:o3,depth:2} : {p:o2,depth:1};
+  masses.push({p:elb.p, m:c.actElbowMass, depth:elb.depth});
+  // wrist-pitch actuator: local -> o4(depth3); elbow -> o3(depth2); shoulder -> o2(depth1)
+  const wp = c.actWristPMount==='local' ? {p:o4,depth:3} : (c.actWristPMount==='elbow' ? {p:o3,depth:2} : {p:o2,depth:1});
+  masses.push({p:wp.p, m:c.actWristPMass, depth:wp.depth});
+  // wrist-roll actuator: local -> o5(depth4); elbow -> o3(depth2); shoulder -> o2(depth1)
+  const wr = c.actWristRMount==='local' ? {p:o5,depth:4} : (c.actWristRMount==='elbow' ? {p:o3,depth:2} : {p:o2,depth:1});
+  masses.push({p:wr.p, m:c.actWristRMass, depth:wr.depth});
+  // base/shoulder actuators never load any joint (stated design assumption, unchanged from before)
+  return masses;
+}
+
+// General 3D gravity torque + reflected inertia for every joint j=1..5,
+// via virtual work: tau_j = z_j . sum_k m_k*(p_k-o_j)x(0,0,-g), summed
+// only over masses genuinely downstream of joint j (depth>=j). This is
+// exact for arbitrary spatial geometry (handles the 180 deg elbow twist
+// correctly, unlike a planar lever-arm formula).
+function gravityAndInertia(c, frames){
+  const masses = buildMasses(c, frames);
+  const L = linkLengths(c);
+  const selfI = [ {I:c.m2*L.L_upperArm*L.L_upperArm/12, depth:2},
+                  {I:c.m3*L.L_forearm*L.L_forearm/12,   depth:3},
+                  {I:c.m4*L.L_wristGrip*L.L_wristGrip/12, depth:4} ];
+  const names=['base','shoulder','elbow','wristP','wristR'];
+  const out={};
+  for(let j=1;j<=5;j++){
+    const z = col3(frames[j].R,2), o = frames[j].o;
+    let tau=0, I=0;
+    masses.forEach(mm=>{
+      if(mm.depth>=j){
+        const r = sub3(mm.p,o);
+        const torqueVec = cross3(r, [0,0,-G*mm.m]);
+        tau += dot3(z, torqueVec);
+        const along = dot3(r,z);
+        const perp2 = Math.max(0, dot3(r,r) - along*along);
+        I += mm.m*perp2;
+      }
+    });
+    selfI.forEach(si=>{ if(si.depth>=j) I+=si.I; });
+    out[names[j-1]] = {tau, I};
+  }
+  return out;
+}
+
+// Grid search worst case within joint-limit ranges (deg) for th2/th3/th4.
+// th1 (base yaw) and th5 (wrist roll) are fixed at 0 during the search:
+// th1 doesn't change any joint's gravity torque magnitude (rotating the
+// whole arm about its own vertical base axis can't change any link's
+// height), and th5 doesn't move anything off the roll axis. Proven, not
+// assumed — see tab 07.
+function worstCase(c, N){
+  N = N||20;
+  const t2Lo=Math.min(c.shMin,c.shMax), t2Hi=Math.max(c.shMin,c.shMax);
+  const t3Lo=Math.min(c.elMin,c.elMax), t3Hi=Math.max(c.elMin,c.elMax);
+  const t4Lo=Math.min(c.wpMin,c.wpMax), t4Hi=Math.max(c.wpMin,c.wpMax);
+  let best = {tauSh:0,tauEl:0,tauWp:0,Ibase:0,Ish:0,Iel:0,Iwp:0,poseSh:{p2:0,p3:0,p4:0}};
+  let first = true;
+  // NOTE: unlike a simple planar arm, torque sign here can flip with pose
+  // (this spatial geometry's z-axis directions mean "gravity pulling one
+  // way" isn't always the same sign) — so the search must track the
+  // magnitude |tau|, not the raw signed max, or it can silently miss a
+  // larger-magnitude negative case. required-torque values are reported
+  // as magnitudes throughout.
+  for(let i=0;i<=N;i++){
+    const t2 = rad(t2Lo + (t2Hi-t2Lo)*i/N);
+    for(let j=0;j<=N;j++){
+      const t3 = rad(t3Lo + (t3Hi-t3Lo)*j/N);
+      for(let k=0;k<=N;k++){
+        const t4 = rad(t4Lo + (t4Hi-t4Lo)*k/N);
+        const frames = dhChain(c, [0,t2,t3,t4,0]);
+        const R = gravityAndInertia(c, frames);
+        if(first || Math.abs(R.shoulder.tau)>best.tauSh){ best.tauSh=Math.abs(R.shoulder.tau); best.poseSh={p2:deg(t2),p3:deg(t3),p4:deg(t4)}; }
+        if(first || Math.abs(R.elbow.tau)>best.tauEl) best.tauEl=Math.abs(R.elbow.tau);
+        if(first || Math.abs(R.wristP.tau)>best.tauWp) best.tauWp=Math.abs(R.wristP.tau);
+        if(first || R.base.I>best.Ibase) best.Ibase=R.base.I;
+        if(first || R.shoulder.I>best.Ish) best.Ish=R.shoulder.I;
+        if(first || R.elbow.I>best.Iel) best.Iel=R.elbow.I;
+        if(first || R.wristP.I>best.Iwp) best.Iwp=R.wristP.I;
+        first=false;
+      }
+    }
+  }
+  return best;
+}
+
+function requiredTorques(c){
+  const w = worstCase(c);
+  const margin = (1+c.fric)*c.SF;
+  const reqBase = (w.Ibase*rad(c.a1))*margin;
+  const reqSh = (w.tauSh + w.Ish*rad(c.a2))*margin;
+  const reqEl = (w.tauEl + w.Iel*rad(c.a3))*margin;
+  const reqWp = (w.tauWp + w.Iwp*rad(c.a4))*margin;
+  const I5 = c.mp*c.rollOffset*c.rollOffset;
+  const staticRoll = G*c.mp*c.rollOffset; // "if misaligned" static figure, unchanged simplification
+  return {
+    base:{static:0, dynamic:w.Ibase*rad(c.a1), required:reqBase},
+    shoulder:{static:w.tauSh, dynamic:w.Ish*rad(c.a2), required:reqSh, pose:w.poseSh},
+    elbow:{static:w.tauEl, dynamic:w.Iel*rad(c.a3), required:reqEl},
+    wristP:{static:w.tauWp, dynamic:w.Iwp*rad(c.a4), required:reqWp},
+    wristR:{static:staticRoll, dynamic:I5*rad(c.a5), required:(staticRoll+I5*rad(c.a5))*margin}
+  };
+}
+
+/* ---------------- Numeric IK (damped least-squares on position Jacobian) ---------------- */
+function computeJacobianPos(frames){
+  const tip = frames[6].o;
+  const Jv = [[],[],[]];
+  for(let j=1;j<=5;j++){
+    const z = col3(frames[j].R,2), o = frames[j].o;
+    const jv = cross3(z, sub3(tip,o));
+    for(let r=0;r<3;r++) Jv[r].push(jv[r]);
+  }
+  return Jv; // 3x5; column 5 (wrist roll) is always ~[0,0,0]
+}
+function inv3(M){
+  const a=M[0][0],b=M[0][1],cc=M[0][2],d=M[1][0],e=M[1][1],f=M[1][2],g=M[2][0],h=M[2][1],i=M[2][2];
+  const A=e*i-f*h, B=-(d*i-f*g), C=d*h-e*g;
+  const det = a*A+b*B+cc*C;
+  if(Math.abs(det)<1e-15) return null;
+  const invDet=1/det;
+  return [
+    [A*invDet, (cc*h-b*i)*invDet, (b*f-cc*e)*invDet],
+    [B*invDet, (a*i-cc*g)*invDet, (cc*d-a*f)*invDet],
+    [C*invDet, (b*g-a*h)*invDet, (a*e-b*d)*invDet]
+  ];
+}
+function matVec3(M,v){ return [M[0][0]*v[0]+M[0][1]*v[1]+M[0][2]*v[2], M[1][0]*v[0]+M[1][1]*v[1]+M[1][2]*v[2], M[2][0]*v[0]+M[2][1]*v[1]+M[2][2]*v[2]]; }
+
+function solveIKNumeric(c, targetM, seedRad, maxIter){
+  maxIter = maxIter||200;
+  let th = seedRad.slice();
+  const lambda=0.002;
+  for(let iter=0; iter<maxIter; iter++){
+    const frames = dhChain(c, th);
+    const tip = frames[6].o;
+    const err = sub3(targetM, tip);
+    if(norm3(err) < 1e-6) break;
+    const Jv = computeJacobianPos(frames);
+    const JJt=[[0,0,0],[0,0,0],[0,0,0]];
+    for(let r=0;r<3;r++) for(let cc=0;cc<3;cc++){ let s=0; for(let k=0;k<5;k++) s+=Jv[r][k]*Jv[cc][k]; JJt[r][cc]=s; }
+    JJt[0][0]+=lambda*lambda; JJt[1][1]+=lambda*lambda; JJt[2][2]+=lambda*lambda;
+    const invM = inv3(JJt);
+    if(!invM) break;
+    const y = matVec3(invM, err);
+    const dth=[];
+    for(let k=0;k<5;k++){ let s=0; for(let r=0;r<3;r++) s+=Jv[r][k]*y[r]; dth.push(s); }
+    for(let k=0;k<5;k++) th[k]+=dth[k];
+  }
+  const framesFinal = dhChain(c, th);
+  const errFinalM = norm3(sub3(targetM, framesFinal[6].o));
+  return {theta:th, errMM:errFinalM*1000, converged:errFinalM<1e-3};
+}
+
+function solveMinTube(tipLoad_N, length_m, material, wall_m, matSF, maxDefl_m){
+  const sigAllow = material.yield/matSF;
+  const M = tipLoad_N*length_m;
+  function sigmaAt(D){ const Din=D-2*wall_m; if(Din<=0) return Infinity; const I=(Math.PI/64)*(Math.pow(D,4)-Math.pow(Din,4)); return M*(D/2)/I; }
+  function deflAt(D){ const Din=D-2*wall_m; if(Din<=0) return Infinity; const I=(Math.PI/64)*(Math.pow(D,4)-Math.pow(Din,4)); return tipLoad_N*Math.pow(length_m,3)/(3*material.E*I); }
+  let a=wall_m*2+1e-6, b=0.3;
+  for(let i=0;i<60;i++){ const mid=(a+b)/2; if(sigmaAt(mid)>sigAllow) a=mid; else b=mid; }
+  const D_stress=b;
+  a=wall_m*2+1e-6; b=0.3;
+  for(let i=0;i<60;i++){ const mid=(a+b)/2; if(deflAt(mid)>maxDefl_m) a=mid; else b=mid; }
+  const D_defl=b;
+  const Dfinal=Math.max(D_stress,D_defl);
+  const Din=Dfinal-2*wall_m;
+  const area=(Math.PI/4)*(Dfinal*Dfinal-Din*Din);
+  return {D_stress,D_defl,Dfinal, mass_kg:area*length_m*material.density, governs: D_defl>D_stress?'deflection':'bending stress'};
+}
+
+// Max reach: grid search over th2/th3/th4 ranges (th1,th5 irrelevant to
+// distance, same proof as worstCase) for the farthest TCP position from
+// the base axis. Not a simple L2+L3+L4 sum once there's a real 3D twist.
+function maxReach(c, N){
+  N = N||20;
+  const t2Lo=Math.min(c.shMin,c.shMax), t2Hi=Math.max(c.shMin,c.shMax);
+  const t3Lo=Math.min(c.elMin,c.elMax), t3Hi=Math.max(c.elMin,c.elMax);
+  const t4Lo=Math.min(c.wpMin,c.wpMax), t4Hi=Math.max(c.wpMin,c.wpMax);
+  let best=0;
+  for(let i=0;i<=N;i++){ const t2=rad(t2Lo+(t2Hi-t2Lo)*i/N);
+    for(let j=0;j<=N;j++){ const t3=rad(t3Lo+(t3Hi-t3Lo)*j/N);
+      for(let k=0;k<=N;k++){ const t4=rad(t4Lo+(t4Hi-t4Lo)*k/N);
+        const frames=dhChain(c,[0,t2,t3,t4,0]);
+        const d=norm3(frames[6].o);
+        if(d>best) best=d;
+      }
+    }
+  }
+  return best;
+}
+
+/* Exported for optional external testing (Node) */
+if(typeof module!=='undefined'){ module.exports = {dhChain,linkLengths,buildMasses,gravityAndInertia,worstCase,requiredTorques,solveIKNumeric,computeJacobianPos,solveMinTube,maxReach,rad,deg,cross3,sub3,dot3,col3,norm3}; }
+</script>
+
+<script>
+/* =====================================================================
+   DOM LAYER — reads inputs, calls pure core, writes outputs only.
+   A single delegated listener drives every recalculation so nothing can
+   be "forgotten" — every field on the page is live by construction.
+   (dhChain/Jacobian/etc. now live in the pure-math core block above —
+   this layer only formats and renders their output.)
+   ===================================================================== */
+function computeJacobian(frames){
+  // full 6x5 (linear+angular), for the DH-tab display
+  const tip = frames[6].o;
+  const J = [[],[],[],[],[],[]];
+  for(let i=1;i<=5;i++){
+    const zi = col3(frames[i].R,2);
+    const oi = frames[i].o;
+    const jv = cross3(zi, sub3(tip,oi));
+    for(let r=0;r<3;r++) J[r].push(jv[r]);
+    for(let r=0;r<3;r++) J[3+r].push(zi[r]);
+  }
+  return J;
+}
+function det3(M){ return M[0][0]*(M[1][1]*M[2][2]-M[1][2]*M[2][1]) - M[0][1]*(M[1][0]*M[2][2]-M[1][2]*M[2][0]) + M[0][2]*(M[1][0]*M[2][1]-M[1][1]*M[2][0]); }
+function manipulability(J){
+  const Jv=[J[0],J[1],J[2]];
+  const M=[[0,0,0],[0,0,0],[0,0,0]];
+  for(let r=0;r<3;r++) for(let cc=0;cc<3;cc++){ let s=0; for(let k=0;k<5;k++) s+=Jv[r][k]*Jv[cc][k]; M[r][cc]=s; }
+  const d=det3(M);
+  return d>0 ? Math.sqrt(d) : 0;
+}
+
+function renderDH(c){
+  const th=[rad(c.t1), rad(c.p2), rad(c.p3), rad(c.p4), rad(c.t5)];
+  const frames = dhChain(c, th);
+
+  const rowsDef = [
+    {i:1, al:0,   a:0,      d:0,       th:'θ1', v:c.t1},
+    {i:2, al:90,  a:0,      d:c.Ld2,   th:'θ2', v:c.p2},
+    {i:3, al:180, a:c.La3,  d:0,       th:'θ3', v:c.p3},
+    {i:4, al:90,  a:c.La4,  d:0,       th:'θ4', v:c.p4},
+    {i:5, al:90,  a:c.La5,  d:c.Ld5,   th:'θ5', v:c.t5},
+    {i:6, al:0,   a:0,      d:c.Ld6,   th:'0 (fixed)', v:0}
+  ];
+  document.getElementById('dhParamTable').innerHTML =
+    '<tr><th>i</th><th>θᵢ (deg, live)</th><th>dᵢ (mm)</th><th>a<sub>i-1</sub> (mm)</th><th>α<sub>i-1</sub></th></tr>'+
+    rowsDef.map(r=>'<tr><td>'+r.i+'</td><td>'+r.th+(r.i<6?' = '+fmtN(r.v,1):'')+'</td><td>'+fmtN(r.d*1000,1)+'</td><td>'+fmtN(r.a*1000,1)+'</td><td>'+fmtN(r.al,0)+'°</td></tr>').join('');
+
+  // --- FK: matrix chain vs. independently-derived closed form ---
+  const tip_mm = frames[6].o.map(v=>v*1000);
+  const c1=Math.cos(th[0]),s1=Math.sin(th[0]);
+  const c2=Math.cos(th[1]),s2=Math.sin(th[1]);
+  const c23=Math.cos(th[1]-th[2]),s23=Math.sin(th[1]-th[2]);
+  const c4=Math.cos(th[3]),s4=Math.sin(th[3]);
+  const D=c.Ld5+c.Ld6;
+  const px = c.La2*c1 + c.La3*c1*c2 + c.La4*c1*c23 - c.La5*(s1*s4 - c1*c4*c23) + c.Ld2*s1 + D*(s1*c4 + s4*c1*c23);
+  const py = c.La2*s1 + c.La3*s1*c2 + c.La4*s1*c23 + c.La5*(s1*c4*c23 + s4*c1) - c.Ld2*c1 + D*(s1*s4*c23 - c1*c4);
+  const pz = c.La3*s2 + c.La4*s23 + c.La5*s23*c4 + D*s4*s23;
+  const closed_mm = [px*1000, py*1000, pz*1000];
+  const diff = Math.hypot(tip_mm[0]-closed_mm[0], tip_mm[1]-closed_mm[1], tip_mm[2]-closed_mm[2]);
+  document.getElementById('dhFKTable').innerHTML =
+    '<tr><th>Source</th><th>X (mm)</th><th>Y (mm)</th><th>Z (mm)</th></tr>'+
+    '<tr><td>Matrix chain (⁰T₆)</td><td>'+fmtN(tip_mm[0],2)+'</td><td>'+fmtN(tip_mm[1],2)+'</td><td>'+fmtN(tip_mm[2],2)+'</td></tr>'+
+    '<tr><td>Closed-form (symbolic)</td><td>'+fmtN(closed_mm[0],2)+'</td><td>'+fmtN(closed_mm[1],2)+'</td><td>'+fmtN(closed_mm[2],2)+'</td></tr>';
+  document.getElementById('dhFKCheck').innerHTML = '<span class="badge '+(diff<0.01?'good':'bad')+'">'+(diff<0.01?'MATCH':'MISMATCH')+'</span> position error = '+fmtN(diff,6)+' mm'+(diff<0.01?' — consistent to numerical precision.':' — check geometry inputs for something out of range.');
+
+  // --- Jacobian ---
+  const J = computeJacobian(frames);
+  const jointCols=['J1','J2','J3','J4','J5'];
+  const labelRows=['vx (mm/rad)','vy (mm/rad)','vz (mm/rad)','ωx (rad/rad)','ωy (rad/rad)','ωz (rad/rad)'];
+  let jacRows='';
+  for(let r=0;r<6;r++){
+    const scale = r<3 ? 1000 : 1;
+    jacRows += '<tr><td>'+labelRows[r]+'</td>'+J[r].map(v=>'<td>'+fmtN(v*scale,3)+'</td>').join('')+'</tr>';
+  }
+  document.getElementById('dhJacTable').innerHTML =
+    '<tr><th>Row</th>'+jointCols.map(j=>'<th>'+j+'</th>').join('')+'</tr>'+jacRows;
+
+  // --- Manipulability ---
+  const w = manipulability(J);
+  const nearSing = w < 1e-4;
+  document.getElementById('dhManipOut').innerHTML =
+    'Translational manipulability at this pose: <span class="val">'+fmtN(w,6)+'</span> '+
+    '<span class="badge '+(nearSing?'bad':(w<1e-3?'warn':'good'))+'">'+(nearSing?'NEAR-SINGULAR':(w<1e-3?'LOW':'OK'))+'</span>'+
+    (nearSing?'<div class="errmsg" style="margin-top:6px;">⚠ This pose is at or very near a kinematic singularity — small joint-velocity commands can require very large (or undefined) velocities in some directions. Avoid programming trajectories through here.</div>':'');
+}
+
+function num(id, fallback){ const el=document.getElementById(id); if(!el) return fallback||0; const v=parseFloat(el.value); return isFinite(v) ? v : (fallback||0); }
+function str(id){ const el=document.getElementById(id); return el ? el.value : ''; }
+function bool(id){ const el=document.getElementById(id); return el ? el.checked : false; }
+
+const MATERIALS = {
+  'Aluminum 6061-T6': {E:69e9, yield:240e6, density:2700},
+  'Steel (mild)':      {E:200e9, yield:250e6, density:7850},
+  'Carbon fiber tube':  {E:135e9, yield:600e6, density:1600},
+  'Nylon (SLS)':        {E:1.7e9, yield:50e6, density:1010},
+  'PLA (3D printed)':   {E:3.5e9, yield:35e6, density:1250},
+  'ABS (3D printed)':   {E:2.0e9, yield:32e6, density:1050},
+};
+const JOINTS = ['base','shoulder','elbow','wristP','wristR'];
+const JOINT_LABEL = {base:'J1 · Base (yaw)', shoulder:'J2 · Shoulder (pitch)', elbow:'J3 · Elbow (pitch)', wristP:'J4 · Wrist (pitch)', wristR:'J5 · Wrist (roll)'};
+const HOLDS_GRAVITY = {base:false, shoulder:true, elbow:true, wristP:true, wristR:false};
+
+function getCfg(){
+  const a2r=num('dhA2',100), a3r=num('dhA3',360), a4r=num('dhA4',300), a5r=num('dhA5',0);
+  const d2r=num('dhD2',60), d5r=num('dhD5',20), d6r=num('dhD6',90);
+  return {
+    raw:{a2:a2r,a3:a3r,a4:a4r,a5:a5r,d2:d2r,d5:d5r,d6:d6r},
+    La2:a2r/1000, La3:Math.max(1e-4,a3r)/1000, La4:Math.max(1e-4,a4r)/1000, La5:a5r/1000,
+    Ld2:d2r/1000, Ld5:d5r/1000, Ld6:Math.max(1e-4,d6r)/1000,
+    m2:Math.max(0,num('m2',180))/1000, m3:Math.max(0,num('m3',140))/1000, m4:Math.max(0,num('m4',160))/1000,
+    c2:clamp(num('c2',0.45),0,1), c3:clamp(num('c3',0.4),0,1), c4:clamp(num('c4',0.4),0,1),
+    mp:Math.max(0,num('mp',250))/1000,
+    actElbowMass:Math.max(0,num('actElbowMass',55))/1000, actElbowMount:str('actElbowMount'),
+    actWristPMass:Math.max(0,num('actWristPMass',25))/1000, actWristPMount:str('actWristPMount'),
+    actWristRMass:Math.max(0,num('actWristRMass',20))/1000, actWristRMount:str('actWristRMount'),
+    actBaseMass:Math.max(0,num('actBaseMass',55))/1000, actShoulderMass:Math.max(0,num('actShoulderMass',60))/1000,
+    shMin:num('shMin',-30), shMax:num('shMax',120), elMin:num('elMin',-140), elMax:num('elMax',140), wpMin:num('wpMin',-120), wpMax:num('wpMax',120),
+    SF:Math.max(0.1,num('SF',1.6)), fric:Math.max(0,num('fricPct',15))/100, derate:clamp(num('deratePct',35),0.1,100)/100,
+    a1:num('a1',90), a2:num('a2',120), a3:num('a3',150), a4:num('a4',200), a5:num('a5',180),
+    rollOffset:Math.max(0,num('rollOffset',20))/1000,
+    t1:num('t1',0), p2:num('p2',45), p3:num('p3',20), p4:num('p4',0), t5:num('t5',0)
+  };
+}
+
+function validate(c){
+  const w=[];
+  if(c.raw.a3<=0) w.push('a3 (upper arm) must be positive.');
+  if(c.raw.a4<=0) w.push('a4 (forearm) must be positive.');
+  if(c.raw.d6<=0) w.push('d6 (gripper TCP offset) must be positive.');
+  if(num('c2')<0||num('c2')>1) w.push('c2 should be between 0 and 1 (using clamped value for calc).');
+  if(num('c3')<0||num('c3')>1) w.push('c3 should be between 0 and 1 (using clamped value for calc).');
+  if(num('c4')<0||num('c4')>1) w.push('c4 should be between 0 and 1 (using clamped value for calc).');
+  if(c.shMin>=c.shMax) w.push('θ2 shoulder min must be less than max.');
+  if(c.elMin>=c.elMax) w.push('θ3 elbow min must be less than max.');
+  if(c.wpMin>=c.wpMax) w.push('θ4 wrist-pitch min must be less than max.');
+  if(num('SF')<1) w.push('Safety factor below 1.0 provides no margin at all — not recommended for anything you\'ll actually build.');
+  if(num('deratePct')<=0||num('deratePct')>100) w.push('Continuous-duty derating should be a percentage between 0 and 100.');
+  JOINTS.forEach(j=>{
+    const gear=num('gear_'+j), eff=num('eff_'+j), stall=num('stall_'+j);
+    if(document.getElementById('gear_'+j)){
+      if(gear<=0) w.push(JOINT_LABEL[j]+': gear ratio must be positive.');
+      if(eff<=0||eff>100) w.push(JOINT_LABEL[j]+': gearbox efficiency should be between 0 and 100%.');
+      if(stall<0) w.push(JOINT_LABEL[j]+': stall torque cannot be negative.');
+    }
+  });
+  return w;
+}
+
+/* ---------------- LIVE POSE / CANVAS ---------------- */
+function renderPose(c, req){
+  document.getElementById('v_t1').textContent=c.t1;
+  document.getElementById('v_p2').textContent=c.p2;
+  document.getElementById('v_p3').textContent=c.p3;
+  document.getElementById('v_p4').textContent=c.p4;
+  document.getElementById('v_t5').textContent=c.t5;
+  document.getElementById('relAngles').innerHTML =
+    'These are now the direct DH joint angles — θ1='+fmtN(c.t1,1)+'° θ2='+fmtN(c.p2,1)+'° θ3='+fmtN(c.p3,1)+'° θ4='+fmtN(c.p4,1)+'° θ5='+fmtN(c.t5,1)+'°';
+
+  const frames = dhChain(c, [rad(c.t1),rad(c.p2),rad(c.p3),rad(c.p4),rad(c.t5)]);
+  const R = gravityAndInertia(c, frames);
+  const rows = [
+    ['J1 Base Yaw','0 (vertical axis — proven zero, see tab 07)'],
+    ['J2 Shoulder', nmkg(Math.abs(R.shoulder.tau))],
+    ['J3 Elbow', nmkg(Math.abs(R.elbow.tau))],
+    ['J4 Wrist Pitch', nmkg(Math.abs(R.wristP.tau))],
+    ['J5 Wrist Roll','~0 unless the payload/gripper mass is off-axis — see tab 03']
+  ];
+  document.getElementById('liveTorqueTable').innerHTML =
+    '<tr><th>Joint</th><th>Static gravity torque at this exact pose</th></tr>'+
+    rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('');
+
+  drawCanvas(c, frames);
+}
+
+function drawCanvas(c, frames){
+  const cv=document.getElementById('cnv'); if(!cv) return;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  // frames[1..6] are o1(base)..o6(TCP), in metres. Side view = X-Z plane, top view = X-Y plane.
+  const pts_mm = frames.map(f=>f.o.map(v=>v*1000));
+  const maxR = Math.max(1, ...pts_mm.map(p=>Math.hypot(p[0],p[1],p[2])));
+  const scale = 240/maxR;
+  const ox=80, oy=cv.height-50;
+  function pt(x,z){ return [ox+x*scale, oy-z*scale]; }
+  ctx.strokeStyle='#2b3140'; ctx.beginPath(); ctx.moveTo(0,oy); ctx.lineTo(cv.width,oy); ctx.stroke();
+
+  // side view: X (radial-ish) vs Z (height) — X here is the frame X in world coords (not
+  // a true "radius" since the arm is genuinely 3D, but with th1 fixed at whatever the
+  // slider says, this is the correct literal side projection at this exact pose)
+  const P = pts_mm.map(p=>pt(p[0],p[2]));
+  function link(a,b,color,w){ ctx.strokeStyle=color; ctx.lineWidth=w; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke(); }
+  link(P[1],P[2],'#5fd4d6',6);   // base -> shoulder
+  link(P[2],P[3],'#ffb454',7);   // shoulder -> elbow (upper arm)
+  link(P[3],P[4],'#5fd4d6',6);   // elbow -> wristP (forearm)
+  link(P[4],P[5],'#ffcc66',4);   // wristP -> wristR
+  link(P[5],P[6],'#ffcc66',5);   // wristR -> TCP
+  function joint(p,label){ ctx.fillStyle='#0e1116'; ctx.strokeStyle='#dbe1ea'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(p[0],p[1],7,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#7c8698'; ctx.font='10px monospace'; ctx.fillText(label,p[0]+9,p[1]-9); }
+  joint(P[2],'shoulder'); joint(P[3],'elbow'); joint(P[4],'wristP'); joint(P[5],'wristR');
+  ctx.fillStyle='#ff6b6b'; ctx.fillRect(P[6][0]-6,P[6][1]-6,12,12);
+  ctx.fillStyle='#7c8698'; ctx.fillText('EE / payload',P[6][0]+9,P[6][1]+4);
+  ctx.fillStyle='#7c8698'; ctx.font='10px monospace';
+  ctx.fillText('side view (X–Z) at this exact θ1 — this arm is genuinely 3D, not planar',10,16);
+
+  // top view (X-Y), same points
+  const cx=cv.width-90, cy=70, rr=40;
+  ctx.strokeStyle='#2b3140'; ctx.beginPath(); ctx.arc(cx,cy,rr,0,Math.PI*2); ctx.stroke();
+  const maxXY = Math.max(1, ...pts_mm.map(p=>Math.hypot(p[0],p[1])));
+  const s2 = rr/maxXY;
+  function ptTop(x,y){ return [cx+x*s2, cy-y*s2]; }
+  const Pt = pts_mm.map(p=>ptTop(p[0],p[1]));
+  ctx.strokeStyle='#ffb454'; ctx.lineWidth=2; ctx.beginPath();
+  ctx.moveTo(Pt[1][0],Pt[1][1]);
+  for(let i=2;i<Pt.length;i++) ctx.lineTo(Pt[i][0],Pt[i][1]);
+  ctx.stroke();
+  ctx.fillStyle='#ff6b6b'; ctx.beginPath(); ctx.arc(Pt[6][0],Pt[6][1],3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#7c8698'; ctx.font='9px monospace'; ctx.fillText('TOP VIEW (X–Y)',cx-32,cy+rr+16);
+}
+
+function applyWorstPose(){
+  const c=getCfg();
+  const w=worstCase(c);
+  document.getElementById('p2').value = clamp(w.poseSh.p2,-90,150);
+  document.getElementById('p3').value = clamp(w.poseSh.p3,-150,150);
+  document.getElementById('p4').value = clamp(w.poseSh.p4,-150,150);
+  document.querySelector('[data-tab="pose"]').click();
+  recalcAll();
+}
+
+/* ---------------- TORQUE & MOTORS ---------------- */
+function renderTorque(c, req){
+  let html='';
+  JOINTS.forEach(j=>{
+    const r=req[j];
+    html += '<div class="formula">'+JOINT_LABEL[j]+': τ_req = ('+fmtN(r.static,3)+' static + '+fmtN(r.dynamic,3)+' dynamic) × '+fmtN(1+c.fric,2)+' (friction) × '+c.SF+' (SF) = <b>'+fmtN(r.required,3)+' N·m  ('+fmtN(r.required*NM2KGCM,1)+' kg·cm)</b></div>';
+  });
+  document.getElementById('reqFormulas').innerHTML = html +
+    '<div class="note">These required-torque numbers already include your safety factor — don\'t stack a second SF when picking a motor in the cards below.</div>';
+
+  JOINTS.forEach(j=>updateMotorCard(j, req[j].required));
+}
+function motorRecommendation(reqNm, holdsGravity, powerOffHold){
+  const kgcm = reqNm*NM2KGCM;
+  let type, reasons=[];
+  if(!holdsGravity){
+    if(kgcm<15){ type='Hobby/standard digital servo, or open-loop stepper (NEMA17) + light gearbox';
+      reasons.push('Inertial-only load (no sustained gravity torque) — a stepper works well here since there is no continuous holding-vs-gravity problem.'); }
+    else { type='NEMA17/23 stepper + gearbox, or a closed-loop servo/BLDC';
+      reasons.push('Exceeds typical hobby-servo range at reasonable size — step up to a geared stepper or small closed-loop motor.'); }
+  } else {
+    if(kgcm<20){ type='Metal-gear digital RC servo (built-in position feedback)';
+      reasons.push('Hobby-servo torque range and this joint holds a constant gravity load — check the servo\'s continuous/rated torque, not its stall spec, and remember it\'s usually rated at 7.4–8.4V.'); }
+    else if(kgcm<60){ type='DC gear-motor + worm gearbox + encoder, or an industrial-grade high-torque servo';
+      reasons.push('Beyond affordable hobby-servo range. A worm-gear reduction is attractive here — typically self-locking, holds the load with the motor OFF, drawing zero holding current.'); }
+    else { type='NEMA23/34 stepper or BLDC + high-ratio planetary/worm gearbox with encoder';
+      reasons.push('High torque — go industrial-class. Strongly prefer a self-locking (worm) or high-ratio/low-efficiency stage so the joint doesn\'t need continuous current just to hold its own weight up.'); }
+  }
+  if(holdsGravity && !powerOffHold) reasons.push('⚠ Not required to hold with power removed — fine, but confirm your controller keeps the motor/servo signal enabled continuously, including at rest, or the arm sags the instant signal drops.');
+  if(holdsGravity && powerOffHold) reasons.push('Power-off holding required — this MUST be self-locking (worm gear, very high ratio + low efficiency, or a mechanical brake). A standard motor alone backdrives and drops the load the moment power is cut, regardless of torque rating.');
+  return {type, reasons};
+}
+function updateMotorCard(j, reqNm){
+  const gear=Math.max(0.01,num('gear_'+j,1));
+  const eff=clamp(num('eff_'+j,85),1,100);
+  const stall=Math.max(0,num('stall_'+j,10));
+  const rotI_gcm2=Math.max(0,num('rotI_'+j,0));
+  const speed=Math.max(0,num('speed_'+j,60));
+  const powerOff=bool('poh_'+j);
+  const c=getCfg();
+
+  const contKgcm = stall*c.derate;
+  const availKgcm = contKgcm*gear*(eff/100);
+  const availNm = availKgcm/NM2KGCM;
+  const pass = availNm >= reqNm;
+  const margin = reqNm>1e-9 ? (availNm/reqNm) : Infinity;
+  const minGear = reqNm>1e-9 ? (reqNm*NM2KGCM)/(contKgcm*(eff/100)) : 0;
+
+  // reflected rotor inertia contribution (motor-side inertia * gear^2 * joint angular accel)
+  const alphaMap={base:'a1',shoulder:'a2',elbow:'a3',wristP:'a4',wristR:'a5'};
+  const alpha = rad(num(alphaMap[j],90));
+  const I_rotor_kgm2 = rotI_gcm2*1e-7;
+  const rotorTorqueNm = I_rotor_kgm2*gear*gear*alpha;
+
+  const rec = motorRecommendation(reqNm, HOLDS_GRAVITY[j], powerOff);
+  const out=document.getElementById('motorOut_'+j);
+  if(!out) return;
+  out.innerHTML =
+    '<div class="formula">Available continuous torque = stall × derate × gear × eff = '+stall+' × '+fmtN(c.derate,2)+' × '+gear+' × '+fmtN(eff/100,2)+
+    ' = <b>'+fmtN(availKgcm,1)+' kg·cm ('+fmtN(availNm,3)+' N·m)</b> vs required '+fmtN(reqNm,3)+' N·m'+
+    ' → <span class="badge '+(pass?'good':'bad')+'">'+(pass?'PASS':'FAIL')+' ('+(isFinite(margin)?fmtN(margin,2)+'×':'∞')+' margin)</span></div>'+
+    (!pass ? '<div class="errmsg">Undersized at this gear ratio. Minimum gear ratio at this stall torque/efficiency ≈ <b>'+fmtN(minGear,1)+':1</b> (you have '+gear+':1).</div>' : '')+
+    (rotI_gcm2>0 ? '<div class="formula">Reflected rotor-inertia torque at motor\'s own α = I_rotor×gear²×α = '+fmtN(I_rotor_kgm2,8)+'kg·m² × '+gear+'² × '+fmtN(alpha,3)+'rad/s² = <b>'+fmtN(rotorTorqueNm,4)+' N·m</b> additional — make sure your available-torque margin above comfortably covers this too.</div>' : '')+
+    '<div class="reasoning"><b>Recommended class:</b> '+rec.type+'<br>'+rec.reasons.map(r=>'• '+r).join('<br>')+'</div>';
+}
+
+/* ---------------- STRUCTURAL ---------------- */
+function structDefs(c){
+  const L = linkLengths(c);
+  return [
+    {id:'L2', name:'Upper Arm (J2 → J3)', L:L.L_upperArm,
+      tipMass:c.m3+c.m4+c.mp
+        + (c.actElbowMount==='local'?c.actElbowMass:0)
+        + ((c.actWristPMount==='local'||c.actWristPMount==='elbow')?c.actWristPMass:0)
+        + ((c.actWristRMount==='local'||c.actWristRMount==='elbow')?c.actWristRMass:0)
+        + c.m2/2},
+    {id:'L3', name:'Forearm (J3 → J4)', L:L.L_forearm,
+      tipMass:c.m4+c.mp
+        + (c.actWristPMount==='local'?c.actWristPMass:0)
+        + (c.actWristRMount==='local'?c.actWristRMass:0)
+        + c.m3/2},
+    {id:'L4', name:'Wrist/Gripper (J4 → tip)', L:L.L_wristGrip, tipMass:c.mp+c.m4/2},
+  ];
+}
+function renderStruct(c){
+  structDefs(c).forEach(d=>updateStructCard(d));
+}
+function updateStructCard(d){
+  const mat = str('mat_'+d.id) || 'Aluminum 6061-T6';
+  const wall = Math.max(0.1,num('wall_'+d.id,2))/1000;
+  const matSF = Math.max(0.5,num('matsf_'+d.id,3));
+  const maxDefl = Math.max(0.1,num('defl_'+d.id,2))/1000;
+  const material = MATERIALS[mat] || MATERIALS['Aluminum 6061-T6'];
+  const F = G*d.tipMass;
+  const res = solveMinTube(F, d.L, material, wall, matSF, maxDefl);
+  const currentMassField = {'L2':'m2','L3':'m3','L4':'m4'}[d.id];
+  const currentMass_g = num(currentMassField,0);
+  const massFinal_g = res.mass_kg*1000;
+  const out=document.getElementById('structOut_'+d.id);
+  if(!out) return;
+  out.innerHTML =
+    '<div class="formula">Worst-case tip load F = g × (downstream + own-link/2 + attached local actuators) = 9.81 × '+fmtN(d.tipMass*1000,0)+'g = '+fmtN(F,2)+' N\n'+
+    'Root bending moment M = F × L = '+fmtN(F,2)+' × '+fmtN(d.L,3)+'m = '+fmtN(F*d.L,3)+' N·m\n'+
+    'Allowable stress = yield/matSF = '+(material.yield/1e6).toFixed(0)+'MPa / '+matSF+' = '+(material.yield/matSF/1e6).toFixed(1)+' MPa</div>'+
+    '<div class="formula">Min. OD for bending-stress limit: Ø'+fmtN(res.D_stress*1000,1)+' mm   Min. OD for '+fmtN(maxDefl*1000,1)+'mm deflection limit: Ø'+fmtN(res.D_defl*1000,1)+' mm</div>'+
+    '<div>Governing case: <span class="badge warn">'+res.governs+'</span> → recommended: <span class="val">Ø'+fmtN(res.Dfinal*1000,1)+' mm × '+fmtN(wall*1000,1)+'mm wall, '+mat+'</span>, estimated mass <span class="val">'+fmtN(massFinal_g,1)+' g</span>'+
+    ' &nbsp;<button class="btn small cyan" onclick="applyStructMass(\''+d.id+'\','+massFinal_g.toFixed(1)+')">Use this mass in Setup</button></div>'+
+    '<div class="hint">Current Setup value: '+currentMassField+' = '+fmtN(currentMass_g,0)+' g. '+
+    (currentMass_g<massFinal_g ? '⚠ Below the structural minimum at this wall/material — increase mass, thicken the wall, or change material.' : 'Has margin over the structural minimum — you may be able to lighten this link, which also reduces every upstream joint\'s torque.')+'</div>';
+}
+function applyStructMass(id, massG){
+  const field={'L2':'m2','L3':'m3','L4':'m4'}[id];
+  document.getElementById(field).value = massG;
+  recalcAll();
+}
+
+/* ---------------- IK ---------------- */
+function wrapDeg(d){ let x=((d+180)%360+360)%360-180; return x; }
+function renderIK(c){
+  const target = [num('ikX',300)/1000, num('ikY',150)/1000, num('ikZ',150)/1000];
+  const seed = [rad(c.t1), rad(c.p2), rad(c.p3), rad(c.p4), rad(c.t5)];
+  const sol = solveIKNumeric(c, target, seed);
+  const out=document.getElementById('ikResult');
+  const btn=document.getElementById('applyPoseBtn');
+  const thDeg = sol.theta.map(deg).map(wrapDeg);
+  const outOfLimits = (thDeg[1]<c.shMin-1e-3||thDeg[1]>c.shMax+1e-3||thDeg[2]<c.elMin-1e-3||thDeg[2]>c.elMax+1e-3||thDeg[3]<c.wpMin-1e-3||thDeg[3]>c.wpMax+1e-3);
+  if(!sol.converged){
+    out.innerHTML = '<div class="errmsg">DID NOT CONVERGE — remaining position error '+fmtN(sol.errMM,2)+' mm. Target is likely outside this arm\'s reachable workspace from the current seed pose (try changing the Live Pose sliders and re-checking, since this solver starts from wherever they currently are).</div>';
+    btn.style.display='none';
+    window.__ik=null;
+    return;
+  }
+  window.__ik = {t1:thDeg[0], p2:thDeg[1], p3:thDeg[2], p4:thDeg[3], t5:thDeg[4]};
+  out.innerHTML = '<div class="okmsg">Converged ✓ (residual '+fmtN(sol.errMM,4)+' mm)</div>'+
+    (outOfLimits ? '<div class="errmsg" style="margin-top:6px;">⚠ This solution falls outside your Setup-tab joint limits — mathematically reachable, but your hardware as configured can\'t physically reach it. Widen the limits or move the target.</div>' : '')+
+    '<div class="formula">θ1 (base yaw) = '+fmtN(thDeg[0],1)+'°\nθ2 (shoulder) = '+fmtN(thDeg[1],1)+'°\nθ3 (elbow) = '+fmtN(thDeg[2],1)+'°\nθ4 (wrist pitch) = '+fmtN(thDeg[3],1)+'°\nθ5 (wrist roll, unconstrained by position) = '+fmtN(thDeg[4],1)+'°</div>';
+  btn.style.display='block';
+}
+function applyIKtoPose(){
+  if(!window.__ik) return;
+  document.getElementById('t1').value=clamp(window.__ik.t1,-150,150);
+  document.getElementById('p2').value=clamp(window.__ik.p2,-90,150);
+  document.getElementById('p3').value=clamp(window.__ik.p3,-150,150);
+  document.getElementById('p4').value=clamp(window.__ik.p4,-150,150);
+  document.getElementById('t5').value=clamp(window.__ik.t5,-180,180);
+  document.querySelector('[data-tab="pose"]').click();
+  recalcAll();
+}
+
+/* ---------------- PAYLOAD / THRUST / POWER ---------------- */
+function availTorque(j){
+  const gear=Math.max(0.01,num('gear_'+j,1));
+  const eff=clamp(num('eff_'+j,85),1,100);
+  const stall=Math.max(0,num('stall_'+j,10));
+  const c=getCfg();
+  return (stall*c.derate*gear*(eff/100))/NM2KGCM;
+}
+function renderPayload(c){
+  const frames = dhChain(c, [rad(c.t1),rad(c.p2),rad(c.p3),rad(c.p4),rad(c.t5)]);
+  const cZero = Object.assign({}, c, {mp:0});
+  const R0 = gravityAndInertia(cZero, frames); // torque WITHOUT payload, at current pose
+  const o6 = frames[6].o;
+  const margin = (1+c.fric)*c.SF;
+  const jointFrameIdx = {shoulder:2, elbow:3, wristP:4};
+  const defs = ['shoulder','elbow','wristP'].map(j=>{
+    const fi = jointFrameIdx[j];
+    const z = col3(frames[fi].R,2), o = frames[fi].o;
+    const coeff = dot3(z, cross3(sub3(o6,o),[0,0,-G])); // torque per kg of payload at this pose
+    return {j, avail:availTorque(j), base:R0[j].tau, coeff};
+  });
+  let rows='', minPayload=Infinity, limiter='—', anyNegative=false;
+  defs.forEach(d=>{
+    let mpMax;
+    if(Math.abs(d.coeff)<1e-9){ mpMax=Infinity; }
+    else { mpMax = (d.avail/margin - Math.abs(d.base))/Math.abs(d.coeff); } // conservative: assumes payload adds in the same sense as the existing load
+    if(mpMax<0) anyNegative=true;
+    if(mpMax<minPayload){ minPayload=mpMax; limiter=JOINT_LABEL[d.j]; }
+    rows += '<tr><td>'+JOINT_LABEL[d.j]+'</td><td>'+nmkg(d.avail)+'</td><td>'+(mpMax>=1e6?'unconstrained (no lever arm at this pose)': (mpMax<0?'0 g (already exceeded, unloaded!)':fmtN(Math.max(0,mpMax)*1000,0)+' g'))+'</td></tr>';
+  });
+  document.getElementById('payloadTable').innerHTML = '<tr><th>Joint</th><th>Available cont. torque</th><th>Max payload before this joint limits</th></tr>'+rows;
+  const overall = Math.max(0, minPayload===Infinity?0:minPayload);
+  document.getElementById('payloadSummary').innerHTML = minPayload===Infinity
+    ? '<div class="note">No meaningful gravity lever arm on the payload right now at this pose. Try a more extended pose.</div>'
+    : ('<div class="'+(overall>=c.mp?'okmsg':'errmsg')+'">Max payload at current pose ≈ <b>'+fmtN(overall*1000,0)+' g</b>, limited by <b>'+limiter+'</b>. Configured payload is '+fmtN(c.mp*1000,0)+' g → '+(overall>=c.mp?'within budget ✓':'EXCEEDS available torque ✗ — reduce payload/reach or upsize that joint\'s motor/gear ratio.')+'</div>'
+      + (anyNegative?'<div class="errmsg" style="margin-top:6px;">⚠ At least one joint\'s available torque is already below what\'s needed just to hold the <i>links themselves</i> up at this pose, with zero payload. Fix that joint\'s motor/gear ratio before adding any payload.</div>':''));
+
+  // grip
+  const mu=Math.max(0.01,num('gripMu',0.4)), n=Math.max(1,num('gripContacts',2));
+  const gt=num('gripTorque',15), gr=Math.max(1,num('gripR',25))/1000, gma=Math.max(0.01,num('gripMA',1.2));
+  const gtNm=gt/NM2KGCM;
+  const required = (c.mp*G*c.SF)/(n*mu);
+  const achievable = gma*gtNm/gr;
+  const gpass = achievable>=required;
+  document.getElementById('gripOut').innerHTML =
+    '<div class="formula">Required = (payload×g×SF)/(contacts×μ) = ('+fmtN(c.mp*1000,0)+'g×9.81×'+c.SF+')/('+n+'×'+mu+') = <b>'+fmtN(required,2)+' N ('+fmtN(required/9.81,2)+' kgf)</b>\n'+
+    'Achievable = (τ×MA)/r = ('+gt+'kg·cm→'+fmtN(gtNm,3)+'N·m × '+gma+')/'+fmtN(gr*1000,0)+'mm = <b>'+fmtN(achievable,2)+' N ('+fmtN(achievable/9.81,2)+' kgf)</b></div>'+
+    '<span class="badge '+(gpass?'good':'bad')+'">'+(gpass?'PASS':'FAIL')+'</span> '+(gpass?'gripper can hold this payload with margin.':'gripper actuator/linkage cannot reach the required clamping force — increase torque, MA, contacts, or reduce r/payload.');
+
+  // thrust
+  const req = requiredTorques(c);
+  const tj=str('thrustJoint')||'shoulder';
+  const lever=Math.max(1,num('thrustLever',30))/1000;
+  const angle=num('thrustAngle',90);
+  const tau=req[tj].required;
+  const denom=lever*Math.sin(rad(angle));
+  const F = Math.abs(denom)>1e-6 ? tau/denom : Infinity;
+  document.getElementById('thrustOut').innerHTML =
+    '<div class="formula">F = τ_required/(r·sinθ) = '+fmtN(tau,3)+' / ('+fmtN(lever*1000,0)+'mm × sin('+angle+'°)) = <b>'+(isFinite(F)?fmtN(F,1)+' N ('+fmtN(F/9.81,2)+' kgf)':'—')+'</b> for '+JOINT_LABEL[tj]+'\'s required '+fmtN(tau*NM2KGCM,2)+' kg·cm</div>'+
+    (angle<25||angle>155 ? '<div class="note">⚠ Shallow attachment angle — thrust requirement rises sharply near 0°/180°. Reposition the attach point if you can.</div>' : '');
+
+  // power
+  let speedRows='', totalP=0;
+  JOINTS.forEach(j=>{
+    const gear=Math.max(0.01,num('gear_'+j,1));
+    const speed=Math.max(0,num('speed_'+j,60));
+    const rpm=speed*gear/6;
+    const P=req[j].required*rad(speed);
+    const Pin=P/0.6;
+    totalP+=Pin;
+    speedRows += '<tr><td>'+JOINT_LABEL[j]+'</td><td>'+speed+'</td><td>'+fmtN(rpm,1)+'</td><td>'+fmtN(P,2)+'</td></tr>';
+  });
+  document.getElementById('speedTable').innerHTML='<tr><th>Joint</th><th>Target speed (deg/s)</th><th>Motor RPM</th><th>Running mech. power (W)</th></tr>'+speedRows;
+  document.getElementById('runningPowerNote').innerHTML = '<b>Running total ≈ '+fmtN(totalP,1)+' W</b> electrical (@ ~60% efficiency) if every joint moved at its target speed under its required torque simultaneously. This is a <i>running</i> figure, not a stall/jam current estimate.';
+
+  let stallRows='';
+  JOINTS.forEach(j=>{ stallRows += '<tr><td>'+JOINT_LABEL[j]+'</td><td><input type="number" id="stallA_'+j+'" step="0.1" value="'+ (window.__stallA && window.__stallA[j]!==undefined ? window.__stallA[j] : 0) +'" style="width:100px"></td></tr>'; });
+  const stallTableExisted = document.getElementById('stallCurrentTable').dataset.built;
+  if(!stallTableExisted){
+    document.getElementById('stallCurrentTable').innerHTML='<tr><th>Joint</th><th>Stall current from datasheet (A)</th></tr>'+stallRows;
+    document.getElementById('stallCurrentTable').dataset.built='1';
+  }
+  window.__stallA = window.__stallA||{};
+  let sum=0, any=false;
+  JOINTS.forEach(j=>{ const v=num('stallA_'+j,0); window.__stallA[j]=v; if(v>0) any=true; sum+=v; });
+  document.getElementById('stallCurrentSum').innerHTML = any
+    ? 'If <b>every</b> joint jammed simultaneously (absolute worst case): supply must survive <b>'+fmtN(sum,2)+' A</b>. A more realistic "two joints jam at once" figure depends on which two — check your two highest-current entries together at minimum.'
+    : 'Enter stall current for at least your highest-torque joints (usually shoulder/elbow) from their datasheets to get a real number here.';
+}
+
+/* ---------------- VALIDATION BANNER ---------------- */
+function renderValidation(c){
+  const w = validate(c);
+  const bar = document.getElementById('globalWarnings');
+  if(w.length){
+    bar.className='has';
+    bar.innerHTML = '⚠ '+w.length+' input issue(s): '+w.join(' · ');
+  } else {
+    bar.className=''; bar.innerHTML='';
+  }
+  document.getElementById('assumeValidation').innerHTML = w.length
+    ? '<ul class="assume">'+w.map(x=>'<li>'+x+'</li>').join('')+'</ul>'
+    : '<div class="okmsg">No input problems detected.</div>';
+}
+
+/* ---------------- TITLEBLOCK ---------------- */
+function renderTitleblock(c, req){
+  const totalMass_g = (c.m2+c.m3+c.m4+c.mp+c.actElbowMass+c.actWristPMass+c.actWristRMass+c.actBaseMass+c.actShoulderMass)*1000;
+  const reach = maxReach(c)*1000;
+  document.getElementById('titleblock').innerHTML =
+    '<span>MAX REACH <b>'+fmtN(reach,0)+'</b> mm</span>'+
+    '<span>PAYLOAD <b>'+fmtN(c.mp*1000,0)+'</b> g</span>'+
+    '<span>TOTAL MOVING MASS <b>'+fmtN(totalMass_g,0)+'</b> g</span>'+
+    '<span>SAFETY <b>'+fmtN(c.SF,2)+'×</b></span>'+
+    '<span>SHOULDER REQ. <b>'+fmtN(req.shoulder.required*NM2KGCM,1)+'</b> kg·cm</span>'+
+    '<span>ELBOW REQ. <b>'+fmtN(req.elbow.required*NM2KGCM,1)+'</b> kg·cm</span>';
+}
+
+/* ---------------- MASTER RECALC ---------------- */
+function recalcAll(){
+  const c = getCfg();
+  const req = requiredTorques(c);
+  renderValidation(c);
+  renderPose(c, req);
+  renderTorque(c, req);
+  renderStruct(c);
+  renderIK(c);
+  renderPayload(c);
+  renderDH(c);
+  renderTitleblock(c, req);
+}
+
+/* one delegated listener drives the entire page */
+document.addEventListener('input', recalcAll);
+document.addEventListener('change', recalcAll);
+document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabcontent').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  document.getElementById('tab-'+b.dataset.tab).classList.add('active');
+}));
+
+recalcAll();
+</script>
+</body>
+</html>
